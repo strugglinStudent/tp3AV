@@ -43,7 +43,7 @@ while True:
         area = cv2.contourArea(contour)
 
         # Filter out contours with an area smaller than 500
-        if area < 11000 or area>15000:
+        if area < 11000 or area>12000:
             continue
         #print(area,"\n")    
         x, y, w, h = cv2.boundingRect(contour)
