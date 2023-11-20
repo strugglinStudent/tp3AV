@@ -1,51 +1,87 @@
-import pydot
 import cv2
-import cv2
-import datetime
-# Open the video
-video = cv2.VideoCapture('./vid.mp4')  # Replace with your video file
-n=60
-# Initialize a list to store all frames
-all_frames = []
-frame_width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
-frame_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-fps = int(video.get(cv2.CAP_PROP_FPS))
-video_codec = cv2.VideoWriter_fourcc(*'H264')
-video_output = cv2.VideoWriter(('video.mp4'), video_codec, fps, (frame_width, frame_height))
-print(video_codec, fps, frame_width, frame_height)
+import numpy as np
+from tracker import *
+# Create tracker object
+tracker = EuclideanDistTracker()
+
+# Open the video containing the binary mask
+mask_video = cv2.VideoCapture('video.mp4')  # Replace with your mask video file
+n = 60
+# Open the video you want to label based on the mask
+input_video = cv2.VideoCapture('vid.mp4')  # Replace with your input video file
+
+# Get video properties
+fps = int(input_video.get(cv2.CAP_PROP_FPS))
+frame_width = int(input_video.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(input_video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+# Create VideoWriter for the output video
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+output_video = cv2.VideoWriter('output_video.mp4', fourcc, fps, (frame_width, frame_height))
+for _ in range(n):
+    ret_input, _ = input_video.read()
 while True:
-    ret, frame = video.read()
-
-    if not ret:
+    ret_mask, frame_mask = mask_video.read()
+    ret_input, frame_input = input_video.read()
+    detections = []
+    if not ret_mask or not ret_input:
         break
-    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    # Append the current frame to the list of all frames
-    all_frames.append(gray_frame)
-
-# Calculate differences between frame[x-n] and frame[x+n] for each frame
-for i in range(n, len(all_frames) - n):
-    frame_x_minus_n = all_frames[i - n]
-    frame_x_plus_n = all_frames[i + n]
-
-    # Calculate the difference between the two frames
-    frame_diff_mn = cv2.absdiff(frame_x_minus_n, all_frames[i])
-    _, binary_diff_mn = cv2.threshold(frame_diff_mn, 60, 255, cv2.THRESH_BINARY)
-
-    frame_diff_pn = cv2.absdiff(frame_x_plus_n, all_frames[i])
-    _, binary_diff_pn = cv2.threshold(frame_diff_pn, 60, 255, cv2.THRESH_BINARY)
-
-    frame_diff = binary_diff_mn & binary_diff_pn
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))  # Adjust the kernel size as needed
-    frame_diff_closed = cv2.morphologyEx(frame_diff, cv2.MORPH_CLOSE, kernel)
-
-    # Display the frame with motion regions for both past and future frames
-    cv2.imshow("frames tn,t+n",frame_diff_closed)
-    video_output.write(frame_diff_closed)
     
-    if cv2.waitKey(30) & 0xFF == 27:  # Wait for 30 ms, if 'ESC' key is pressed, exit the loop
+    # Convert the mask frame to grayscale
+    mask_gray = cv2.cvtColor(frame_mask, cv2.COLOR_BGR2GRAY)
+
+    # Threshold the mask frame to get a binary mask
+    _, binary_mask = cv2.threshold(mask_gray, 127, 255, cv2.THRESH_BINARY)
+
+    # Find contours in the binary mask
+    contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Draw rectangles around the contours on the input frame
+    frame_with_rectangles = frame_input.copy()
+    for i, contour in enumerate(contours):
+        # Calculate contour area
+        area = cv2.contourArea(contour)
+
+        # Filter out contours with an area smaller than 500
+        if area < 11000 or area>12000:
+            continue
+        #print(area,"\n")    
+        x, y, w, h = cv2.boundingRect(contour)
+        detections.append((x, y, x + w, y + h))
+
+        # Label each object with a unique ID and its contour area
+
+
+        boxes_ids = tracker.update(detections)
+    prev_center = (int((x + x + w) / 2), int((y + y + h) / 2))
+    # Draw the updated bounding boxes on the frame
+    for box_id in boxes_ids:
+        x, y, w, h, obj_id = [int(c) for c in box_id]
+
+        # Draw rectangle around the object
+        cv2.rectangle(frame_with_rectangles, (x, y), (w, h), (0, 255, 0), 2)
+
+        # Show object ID
+        cv2.putText(frame_with_rectangles, f"ID: {obj_id}", (x, y - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+        current_center = (tracker.center_points[obj_id])
+        print(tracker.center_points[obj_id])
+        cv2.line(frame_with_rectangles, prev_center, current_center, (0, 0, 255), 1)
+        prev_center = current_center
+
+
+    # Display the frame with rectangles and labels
+    cv2.imshow("Objects in Video", frame_with_rectangles)
+
+    # Write the frame to the output video
+    output_video.write(frame_with_rectangles)
+
+    # Break the loop if the 'ESC' key is pressed
+    if cv2.waitKey(30) & 0xFF == 27:
         break
-# Release the video and close windows
-print (i,"\n")
-video.release()
-video_output.release()
+
+# Release resources
+mask_video.release()
+input_video.release()
+output_video.release()
 cv2.destroyAllWindows()
