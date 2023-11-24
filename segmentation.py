@@ -11,7 +11,7 @@ frame_width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fps = int(video.get(cv2.CAP_PROP_FPS))
 video_codec = cv2.VideoWriter_fourcc(*'H264')
-video_output = cv2.VideoWriter(('video.mp4'), video_codec, fps, (frame_width, frame_height))
+video_output = cv2.VideoWriter(('videoseg.mp4'), video_codec, fps, (frame_width, frame_height))
 print(video_codec, fps, frame_width, frame_height)
 while True:
     ret, frame = video.read()
@@ -35,12 +35,17 @@ for i in range(n, len(all_frames) - n):
     _, binary_diff_pn = cv2.threshold(frame_diff_pn, 60, 255, cv2.THRESH_BINARY)
 
     frame_diff = binary_diff_mn & binary_diff_pn
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))  # Adjust the kernel size as needed
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))  # Adjust the kernel size as needed
     frame_diff_closed = cv2.morphologyEx(frame_diff, cv2.MORPH_CLOSE, kernel)
-
-    # Display the frame with motion regions for both past and future frames
-    cv2.imshow("frames tn,t+n",frame_diff_closed)
-    video_output.write(frame_diff_closed)
+     # Find contours in the cleaned binary difference frame
+    # Apply morphological opening to eliminate small zones
+    kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))  # Adjust the kernel size for opening
+    frame_diff_cleaned = cv2.morphologyEx(frame_diff_closed, cv2.MORPH_OPEN, kernel_open)
+    
+    kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))  # Adjust the kernel size for opening
+    frame_diff_cleaned = cv2.morphologyEx(frame_diff_closed, cv2.MORPH_OPEN, kernel_open)
+    cv2.imshow("frames tn,t+n",frame_diff_cleaned )
+    video_output.write(frame_diff_cleaned)
     
     if cv2.waitKey(30) & 0xFF == 27:  # Wait for 30 ms, if 'ESC' key is pressed, exit the loop
         break

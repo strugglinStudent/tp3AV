@@ -5,7 +5,7 @@ from tracker import *
 tracker = EuclideanDistTracker()
 
 # Open the video containing the binary mask
-mask_video = cv2.VideoCapture('video.mp4')  # Replace with your mask video file
+mask_video = cv2.VideoCapture('videoseg.mp4')  # Replace with your mask video file
 n = 60
 # Open the video you want to label based on the mask
 input_video = cv2.VideoCapture('vid.mp4')  # Replace with your input video file
@@ -43,7 +43,7 @@ while True:
         area = cv2.contourArea(contour)
 
         # Filter out contours with an area smaller than 500
-        if area < 11000 or area>12000:
+        if area < 11000 or area>13000:
             continue
         #print(area,"\n")    
         x, y, w, h = cv2.boundingRect(contour)
@@ -52,8 +52,7 @@ while True:
         # Label each object with a unique ID and its contour area
 
 
-        boxes_ids = tracker.update(detections)
-    prev_center = (int((x + x + w) / 2), int((y + y + h) / 2))
+    boxes_ids = tracker.update(detections)
     # Draw the updated bounding boxes on the frame
     for box_id in boxes_ids:
         x, y, w, h, obj_id = [int(c) for c in box_id]
@@ -64,10 +63,8 @@ while True:
         # Show object ID
         cv2.putText(frame_with_rectangles, f"ID: {obj_id}", (x, y - 20),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-        current_center = (tracker.center_points[obj_id])
         print(tracker.center_points[obj_id])
-        cv2.line(frame_with_rectangles, prev_center, current_center, (0, 0, 255), 1)
-        prev_center = current_center
+     
 
 
     # Display the frame with rectangles and labels
