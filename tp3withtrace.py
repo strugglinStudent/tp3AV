@@ -6,7 +6,7 @@ from tracker import EuclideanDistTracker
 tracker = EuclideanDistTracker()
 
 # Open the video containing the binary mask
-mask_video = cv2.VideoCapture('video.mp4')  # Replace with your mask video file
+mask_video = cv2.VideoCapture('videoseg.mp4')  # Replace with your mask video file
 n = 60
 # Open the video you want to label based on the mask
 input_video = cv2.VideoCapture('vid.mp4')  # Replace with your input video file

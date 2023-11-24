@@ -20,7 +20,7 @@ if not cap.isOpened():
 # Generate initial corners/features from the first frame
 # Create a dict for the arguments of the main two methods: Shi Tomasi for feature extraction and Lucas and kanade OpticalFlow 
 # set limit, minimum distance in pixels and quality of object corner to be tracked
-parameters_shitomasi = dict(maxCorners=10, qualityLevel=0.3, minDistance=1)
+parameters_shitomasi = dict(maxCorners=10, qualityLevel=0.3, minDistance=10)
 # set min size of tracked object, e.g. 15x15px
 parameter_lucas_kanade = dict(winSize=(15, 15), maxLevel=1, criteria=(cv2.TERM_CRITERIA_EPS |
                                                                       cv2.TERM_CRITERIA_COUNT, 10, 0.03))

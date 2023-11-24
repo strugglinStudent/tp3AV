@@ -36,14 +36,13 @@ for i in range(n, len(all_frames) - n):
 
     frame_diff = binary_diff_mn & binary_diff_pn
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))  # Adjust the kernel size as needed
-    frame_diff_closed = cv2.morphologyEx(frame_diff, cv2.MORPH_CLOSE, kernel)
+    frame_diff_opened = cv2.morphologyEx(frame_diff, cv2.MORPH_OPEN, kernel)
      # Find contours in the cleaned binary difference frame
     # Apply morphological opening to eliminate small zones
-    kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))  # Adjust the kernel size for opening
-    frame_diff_cleaned = cv2.morphologyEx(frame_diff_closed, cv2.MORPH_OPEN, kernel_open)
-    
     kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))  # Adjust the kernel size for opening
-    frame_diff_cleaned = cv2.morphologyEx(frame_diff_closed, cv2.MORPH_OPEN, kernel_open)
+    frame_diff_cleaned = cv2.morphologyEx(frame_diff_opened, cv2.MORPH_CLOSE, kernel_open)
+    kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (21, 21))  # Adjust the kernel size for opening
+    frame_diff_cleaned = cv2.morphologyEx(frame_diff_cleaned, cv2.MORPH_OPEN, kernel_open)
     cv2.imshow("frames tn,t+n",frame_diff_cleaned )
     video_output.write(frame_diff_cleaned)
     
